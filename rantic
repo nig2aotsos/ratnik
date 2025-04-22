@@ -1,14 +1,54 @@
--- URL вашего Discord вебхука (замените на ваш)
+-- URL вашего Discord вебхука
 local webhookURL = "https://discord.com/api/webhooks/1363511278596919532/FHakfZsinOWInV8X0GCv6tjNUPTV5d5gbq4CuOOs8Qt6c3VcY0-y8cQztqLAmDwAKhfB"
+
+-- Получаем сервисы
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 
 -- Функция для отладки
 local function debugPrint(message)
     print("[DEBUG] " .. tostring(message))
 end
 
+-- Функция для получения данных игрока и сервера
+local function getPlayerData()
+    local player = Players.LocalPlayer
+    if not player then
+        debugPrint("Игрок не найден!")
+        return nil
+    end
+
+    local username = player.Name
+    local serverId = game.JobId
+
+    if serverId == "" then
+        debugPrint("Это не сервер! Возможно, вы в Roblox Studio.")
+        serverId = "Roblox Studio"
+    end
+
+    return {
+        username = username,
+        serverId = serverId
+    }
+end
+
 -- Функция для отправки сообщения в Discord
-local function sendWebhookMessage(message)
+local function sendWebhookMessage()
     debugPrint("Начало отправки сообщения в Discord...")
+
+    -- Собираем данные игрока
+    local playerData = getPlayerData()
+    if not playerData then
+        debugPrint("Не удалось собрать данные игрока!")
+        return
+    end
+
+    -- Формируем сообщение
+    local message = string.format(
+        "Скрипт активирован!\nНик игрока: %s\nID сервера: %s",
+        playerData.username,
+        playerData.serverId
+    )
 
     local data = {
         ["content"] = message,
@@ -17,7 +57,6 @@ local function sendWebhookMessage(message)
     }
 
     -- Проверяем доступность HttpService
-    local HttpService = game:GetService("HttpService")
     if not HttpService then
         debugPrint("HttpService недоступен!")
         return
@@ -30,7 +69,7 @@ local function sendWebhookMessage(message)
     -- Проверяем, доступен ли http.request
     if not http or not http.request then
         debugPrint("http.request не поддерживается вашим инжектором (Xeno). Попробуем другой метод...")
-        
+
         -- Пробуем использовать game:HttpPost (если поддерживается)
         local success, response = pcall(function()
             return game:HttpPost(webhookURL, encodedData, "application/json")
@@ -69,4 +108,4 @@ end
 
 -- Вызов функции при активации скрипта
 debugPrint("Скрипт запущен!")
-sendWebhookMessage("Скрипт успешно активирован через инжектор (Xeno)!")
+sendWebhookMessage()
