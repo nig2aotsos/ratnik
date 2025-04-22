@@ -1,0 +1,72 @@
+-- URL вашего Discord вебхука (замените на ваш)
+local webhookURL = "https://discord.com/api/webhooks/1363511278596919532/FHakfZsinOWInV8X0GCv6tjNUPTV5d5gbq4CuOOs8Qt6c3VcY0-y8cQztqLAmDwAKhfB"
+
+-- Функция для отладки
+local function debugPrint(message)
+    print("[DEBUG] " .. tostring(message))
+end
+
+-- Функция для отправки сообщения в Discord
+local function sendWebhookMessage(message)
+    debugPrint("Начало отправки сообщения в Discord...")
+
+    local data = {
+        ["content"] = message,
+        ["username"] = "Roblox Injector Bot",
+        ["avatar_url"] = "https://i.imgur.com/4Kuye6W.jpeg"
+    }
+
+    -- Проверяем доступность HttpService
+    local HttpService = game:GetService("HttpService")
+    if not HttpService then
+        debugPrint("HttpService недоступен!")
+        return
+    end
+
+    -- Кодируем данные в JSON
+    local encodedData = HttpService:JSONEncode(data)
+    debugPrint("Данные закодированы: " .. encodedData)
+
+    -- Проверяем, доступен ли http.request
+    if not http or not http.request then
+        debugPrint("http.request не поддерживается вашим инжектором (Xeno). Попробуем другой метод...")
+        
+        -- Пробуем использовать game:HttpPost (если поддерживается)
+        local success, response = pcall(function()
+            return game:HttpPost(webhookURL, encodedData, "application/json")
+        end)
+
+        if success then
+            debugPrint("Сообщение успешно отправлено через game:HttpPost!")
+        else
+            debugPrint("Ошибка при использовании game:HttpPost: " .. tostring(response))
+        end
+        return
+    end
+
+    -- Используем http.request, если он доступен
+    local success, response = pcall(function()
+        return http.request({
+            Url = webhookURL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = encodedData
+        })
+    end)
+
+    if success then
+        if response.StatusCode == 204 then
+            debugPrint("Сообщение успешно отправлено в Discord!")
+        else
+            debugPrint("Ошибка Discord: Код " .. tostring(response.StatusCode))
+        end
+    else
+        debugPrint("Ошибка при отправке сообщения: " .. tostring(response))
+    end
+end
+
+-- Вызов функции при активации скрипта
+debugPrint("Скрипт запущен!")
+sendWebhookMessage("Скрипт успешно активирован через инжектор (Xeno)!")
